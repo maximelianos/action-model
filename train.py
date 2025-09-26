@@ -22,7 +22,6 @@ import matplotlib.pyplot as plt
 import pickle
 from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
-from torch.utils.data import random_split
 import hydra
 from omegaconf import DictConfig, OmegaConf
 
@@ -132,28 +131,30 @@ def lrfn(epoch, args):
 
 
 def create_datasets(args):
-    """Create training and validation datasets with proper split"""
+    """Create training and validation datasets with episode-based split"""
     print("Loading dataset...")
     if not Path(args.dataset_path).exists():
         raise FileNotFoundError(f"Dataset file doesn't exist: {args.dataset_path}")
     
-    # Load full dataset
-    dataset = RobomimicLoader(args.dataset_path, history_length=args.history_length)
-    
-    # Calculate split sizes
-    total_size = len(dataset)
-    val_size = int(args.val_split * total_size)
-    train_size = total_size - val_size
-    
-    print(f"Total dataset size: {total_size}")
-    print(f"Training dataset size: {train_size}")
-    print(f"Validation dataset size: {val_size}")
-    
-    # Create train/validation split
-    train_dataset, val_dataset = random_split(
-        dataset, [train_size, val_size],
-        generator=torch.Generator().manual_seed(args.seed)
+    # Create training and validation datasets with episode-based split
+    train_dataset = RobomimicLoader(
+        args.dataset_path, 
+        history_length=args.history_length,
+        is_validation=False,
+        val_split=args.val_split,
+        seed=args.seed
     )
+    
+    val_dataset = RobomimicLoader(
+        args.dataset_path,
+        history_length=args.history_length, 
+        is_validation=True,
+        val_split=args.val_split,
+        seed=args.seed
+    )
+    
+    print(f"Training dataset size: {len(train_dataset)}")
+    print(f"Validation dataset size: {len(val_dataset)}")
     
     return train_dataset, val_dataset
 
@@ -362,11 +363,7 @@ def test_model_inference(model, dataset, args):
     
     with torch.no_grad():
         for idx in test_indices:
-            if hasattr(dataset, 'dataset'):  # Handle subset from random_split
-                image, action = dataset.dataset[dataset.indices[idx]]
-            else:
-                image, action = dataset[idx]
-                
+            image, action = dataset[idx]
             image = image[None, ...].to(args.device)
             
             output = model(image)[0].detach().cpu()
@@ -441,10 +438,7 @@ def main(args: DictConfig):
     train_dataset, val_dataset = create_datasets(args)
     
     # Test dataset sample
-    if hasattr(train_dataset, 'dataset'):  # Handle subset from random_split
-        sample_image, sample_action = train_dataset.dataset[train_dataset.indices[0]]
-    else:
-        sample_image, sample_action = train_dataset[0]
+    sample_image, sample_action = train_dataset[0]
     
     print(f"\nSample data info:")
     imginfo(sample_image)
