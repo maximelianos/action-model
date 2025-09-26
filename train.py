@@ -28,6 +28,7 @@ from omegaconf import DictConfig, OmegaConf
 from dataset import RobomimicLoader
 from imitation_model import CNN
 from loss_logger import LossLogger
+from plot_loss import plot_training_curves
 
 
 def imginfo(img):
@@ -63,45 +64,6 @@ class Vit(nn.Module):
 
         x = self.vit(images) # (b, c, h, w) -> (b, 768) -> (b, num_classes)
         return x
-
-
-class Logger:
-    def __init__(self, path='runs/logbook', total_steps=0):
-        self.total_steps = total_steps
-        self.running_loss = {}
-        self.writer = None
-        self.writer_path = path
-
-    def _print_training_status(self):
-        # write average values to tensorboard
-        if self.writer is None:
-            self.writer = SummaryWriter(self.writer_path)
-        for key in self.running_loss:
-            self.writer.add_scalar(key, self.running_loss[key]/PRINT_FREQ, self.total_steps)
-            self.running_loss[key] = 0.0
-
-    def push(self, metrics):
-        # sum new metric values for averaging
-        self.total_steps += 1
-
-        for key in metrics:
-            if key not in self.running_loss:
-                self.running_loss[key] = 0.0
-            self.running_loss[key] += metrics[key]
-
-        if self.total_steps % PRINT_FREQ == PRINT_FREQ - 1:
-            self._print_training_status()
-            self.running_loss = {}
-
-    def write_dict(self, results):
-        # write values to tensorboard without averaging
-        if self.writer is None:
-            self.writer = SummaryWriter(self.writer_path)
-        for key in results:
-            self.writer.add_scalar(key, results[key], self.total_steps)
-
-    def close(self):
-        self.writer.close()
 
 
 # Default constants (will be overridden by config)
@@ -376,42 +338,6 @@ def test_model_inference(model, dataset, args):
             thr = 0.2
             accuracy = (output - action).abs() < thr
             print(f"Accuracy within {thr}: {accuracy}")
-
-
-def plot_training_curves(logger, args):
-    """Plot training and validation curves"""
-    print("Plotting training curves...")
-    
-    fig, ax = plt.subplots(1, 1, figsize=(10, 6))
-    
-    # Plot train curve
-    try:
-        t, train_loss = logger.get("train")
-        ax.plot(t, train_loss, 'b-', label='Training Loss', linewidth=2)
-        print(f"Train average loss: {train_loss.mean():.6f}")
-    except KeyError:
-        print("No training loss data found")
-    
-    # Plot validation curve
-    try:
-        t, val_loss = logger.get("val")
-        ax.plot(t, val_loss, 'r-', label='Validation Loss', linewidth=2)
-        print(f"Val average loss: {val_loss.mean():.6f}")
-    except KeyError:
-        print("No validation loss data found")
-    
-    ax.set_xlabel('Epoch')
-    ax.set_ylabel('Loss')
-    ax.set_title('Training and Validation Loss')
-    ax.legend()
-    ax.grid(True, alpha=0.3)
-    
-    # Save the plot
-    output_path = Path(args.output_dir) / "training_curves.png"
-    plt.savefig(output_path, dpi=300, bbox_inches='tight')
-    print(f"Training curves saved to {output_path}")
-    
-    plt.close()
 
 
 @hydra.main(version_base=None, config_path="conf", config_name="config")
