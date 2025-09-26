@@ -1,0 +1,49 @@
+# Action Model Training Configuration
+
+# Data configuration
+dataset_path: "datasets/demo.hdf5"
+history_length: 3
+val_split: 0.2
+seed: 42
+
+# Model configuration
+model_type: cnn  # cnn or vit
+input_channels: 9  # 3 * history_length for RGB images
+action_dim: 7
+
+# Training configuration
+device: cuda
+num_epochs: 50
+batch_size: 32
+lr: 0.001
+weight_decay: 1e-5
+workers: 2
+save_freq: 5  # Save checkpoint every N epochs
+
+# Learning rate schedule
+rampup_epochs: 0
+start_lr: 0.0001
+sustain_epochs: 0
+min_lr: 0.001
+max_lr: 0.01
+exp_decay: 0.8
+step_epoch: []
+step_lr: []
+
+# Output directories
+output_dir: ./outputs
+checkpoint_dir: ./checkpoints
+
+# Training control
+resume: false  # Whether to resume from checkpoint
+
+# Disable Hydra outputs directory
+defaults:
+  - _self_
+  - override hydra/hydra_logging: disabled
+  - override hydra/job_logging: disabled
+
+hydra:
+  output_subdir: null
+  run:
+    dir: .

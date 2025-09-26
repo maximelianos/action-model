@@ -1,0 +1,23 @@
+# Ignore Tex files
+*.out
+*.log
+*.aux
+*.gz
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE settings
+.ipynb_checkpoints/
+.idea
+
+plot/
+data/
+papers/
+outputs/
+
+bridge_data_v2/
+robomimic/
+neural-lstm/
