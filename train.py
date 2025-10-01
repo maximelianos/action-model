@@ -18,10 +18,7 @@ from torchvision.models import resnet18, get_model
 import timm
 import torchsummary
 
-import matplotlib.pyplot as plt
-import pickle
 from tqdm import tqdm
-from torch.utils.tensorboard import SummaryWriter
 import hydra
 from omegaconf import DictConfig, OmegaConf
 
@@ -352,7 +349,8 @@ def main(args: DictConfig):
         torch.cuda.manual_seed(args.seed)
     
     # Setup device
-    args.device = "cuda" if torch.cuda.is_available() and args.device == "cuda" else "cpu"
+    if args.device == "cpu":
+        args.device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {args.device}")
     print(f"Configuration:\n{OmegaConf.to_yaml(args)}")
     

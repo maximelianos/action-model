@@ -27,6 +27,10 @@ def plot_training_curves(logger, args):
     except KeyError:
         print("No validation loss data found")
     
+    # set ylim
+    ylim = max(train_loss.mean(), val_loss.mean()) * 1.5
+    ax.set_ylim((0, ylim))
+    
     ax.set_xlabel('Epoch')
     ax.set_ylabel('Loss')
     ax.set_title('Training and Validation Loss')
@@ -47,7 +51,7 @@ def main(args : DictConfig):
     print("=== Transformer Autoencoder for Neural Time Series ===")
 
     # Load train log
-    train_log = LossLogger(args.data_dir + "/loss.h5", overwrite=False)
+    train_log = LossLogger(args.output_dir + "/loss.h5", overwrite=False)
 
     # Plot training curves
     plot_training_curves(train_log, args)
